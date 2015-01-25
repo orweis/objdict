@@ -15,7 +15,6 @@ class AttrObj(object):
             raise AttributeError(name)
 
     def __getattr__(self, name):
-        print "aaa", name
         try:
             return self[name]
         except KeyError:
@@ -26,6 +25,19 @@ class AttrObj(object):
 
 class AttrDict(AttrObj, dict):
     pass
+
+
+class JsDict(AttrDict):
+    """
+    A Dictionary that behaves like a JavaScript Object
+    Access via attribues, and returns None as default for missing items.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(JsDict, self).__init__(*args, **kwargs)
+        
+    def __getattr__(self, name):
+        return self.get(name,None)
 
 
 def split_dict(d, key_groups, dict_type = dict ):
@@ -149,7 +161,6 @@ class Objdict (AttrObj, Rdict):
             return AttrObj.__getattr__(self, name)
 
     def __getattribute__(self, name):
-        print name
         # Ignore selected attribute names- treating them as real attributes only 
         if name in Objdict.__ignored_keys__:
             return Rdict.__getattribute__(self, name)
