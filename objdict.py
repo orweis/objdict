@@ -1,12 +1,14 @@
 import collections
 import copy
-import inspect 
 
 __author__ = 'OW'
 
 
 class AttrObj(object):
+
     __slots__ = []
+    __setattr__ = dict.__setitem__
+    __iter__ = dict.iteritems
 
     def __delattr__(self, name):
         try:
@@ -20,8 +22,7 @@ class AttrObj(object):
         except KeyError:
             raise AttributeError(name)
 
-    __setattr__ = dict.__setitem__
-    __iter__ = dict.iteritems
+
 
 class AttrDict(AttrObj, dict):
     pass
@@ -84,7 +85,6 @@ class Rdict(dict):
         >>> o1 = Rdict({1: {2: ["a","b"]} })
         >>> o2 = Rdict({1: {2: ["c","d"], "2.1" : "String" } })
         >>> o1.update(o2)
-        >>> o1.update(o2)
         >>> print(o1)
         {1: {2: ['a', 'b', 'c', 'd'], '2.1': 'String'}}
     """
@@ -93,23 +93,23 @@ class Rdict(dict):
         super(Rdict, self).__init__(*args, **kwargs)
         # The internal type used to init children dicts
         # Default is the current class
-        self.__dict_type = self.__class__
+        self._dict_type_ = self.__class__
 
     def __getitem__(self, item):
-        result = super(Rdict, self).get(item, self.__dict_type())
+        result = super(Rdict, self).get(item, self._dict_type_())
         if isinstance(result, Rdict) and len(result) == 0:
             self[item] = result
         return result
 
     def __setitem__(self, key, value):
         if isinstance(value, dict) and not isinstance(value, Rdict):
-            value = self.__dict_type(value)
+            value = self._dict_type_(value)
         return super(Rdict, self).__setitem__(key, value)
 
     def _updateSubMap(self, k, v):
         #Make sure internal mappings are also Rdicts
         if not isinstance(self[k], Rdict):
-            self[k] = self.__dict_type(self[k])
+            self[k] = self._dict_type_(self[k])
             #Recurs on internal value
         self[k].update(v)
 
@@ -145,7 +145,15 @@ class Rdict(dict):
 class Objdict (AttrObj, Rdict):
     
     # ignore builtins and IDE frequently used attribute checks
-    __ignored_keys__ = {"__class__","__dict__","__members__","__methods__","_oleobj_","_obj_"}
+    __ignored_keys__ = {"_dict_type_", "__class__","__dict__","__members__","__methods__","_oleobj_","_obj_", "_ipython_display_", "_getAttributeNames","trait_names" }
+
+
+    def __setattr__(self, name, value):
+        if name in Objdict.__ignored_keys__:
+            return Rdict.__setattr__(self, name, value)
+        else:
+            return AttrObj.__setattr__(self, name, value)
+
 
     def __delattr__(self, name):
         try:
@@ -156,16 +164,10 @@ class Objdict (AttrObj, Rdict):
     def __getattr__(self, name):
         # Ignore selected attribute names- treating them as real attributes only 
         if name in Objdict.__ignored_keys__:
-            return Rdict.__getattr__(self, name)
+            return Rdict.__getattribute__(self, name)
         else:
             return AttrObj.__getattr__(self, name)
 
-    def __getattribute__(self, name):
-        # Ignore selected attribute names- treating them as real attributes only 
-        if name in Objdict.__ignored_keys__:
-            return Rdict.__getattribute__(self, name)
-        else:
-            return AttrObj.__getattribute__(self, name)
 
     def split(self, key_groups):
         """
@@ -174,9 +176,6 @@ class Objdict (AttrObj, Rdict):
                 keys that weren't set in a group, will be part of the last 'left-overs' group.
         """
         return split_dict(self, key_groups, dict_type=self.__class__)
-
-
-
 
 
 class OrderedMap(collections.OrderedDict):
@@ -194,3 +193,11 @@ class OrderedMap(collections.OrderedDict):
         self.update(other)
         return self
 
+
+
+def test():
+    o = Objdict()
+    o["Key"]["AnotherKey"]["YetAnotherKey"] = 8
+    return o
+
+test()
