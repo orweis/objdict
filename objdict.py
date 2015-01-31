@@ -41,33 +41,56 @@ class JsDict(AttrDict):
         return self.get(name,None)
 
 
-def split_dict(d, key_groups, dict_type = dict ):
-    """
-    @param d a dictionary to split
-    @param key_groups a list of key groups (e.g. [(1,2,3),  ("a", "b", 6)] to split according to
-    @return a list of dictionaries , each dict containing the keys of one given group and the matching values from the original dict;
-            keys that weren't set in a group, will be part of the last 'left-overs' group.
-    """
-    # Final outcome split
-    result = []
-    # Track which keys got a new group
-    handled_keys = set()
-    #For every group
-    for key_group in key_groups:
-        # Create a new key
-        outcome_dict = dict_type()
-        #Using the given keys
-        for key in key_group:
-            outcome_dict[key] = d[key]
-            handled_keys.add(key)
-        result.append(outcome_dict)
-    # Take all unhandled keys as a new group
-    last_outcome_dict = dict_type()
-    for unhandled_key in handled_keys.symmetric_difference(d.keys()):
-        last_outcome_dict[unhandled_key] = d[unhandled_key]
-    result.append(last_outcome_dict)
-    # Return the list of new dictionaries
-    return result
+class DictUtils(object):
+
+    @staticmethod
+    def split(d, key_groups, dict_type = dict ):
+        """
+        @param d a dictionary to split
+        @param key_groups a list of key groups (e.g. [(1,2,3),  ("a", "b", 6)] to split according to
+        @return a list of dictionaries , each dict containing the keys of one given group and the matching values from the original dict;
+                keys that weren't set in a group, will be part of the last 'left-overs' group.
+        """
+        # Final outcome split
+        result = []
+        # Track which keys got a new group
+        handled_keys = set()
+        #For every group
+        for key_group in key_groups:
+            # Create a new key
+            outcome_dict = dict_type()
+            #Using the given keys
+            for key in key_group:
+                outcome_dict[key] = d[key]
+                handled_keys.add(key)
+            result.append(outcome_dict)
+        # Take all unhandled keys as a new group
+        last_outcome_dict = dict_type()
+        for unhandled_key in handled_keys.symmetric_difference(d.keys()):
+            last_outcome_dict[unhandled_key] = d[unhandled_key]
+        result.append(last_outcome_dict)
+        # Return the list of new dictionaries
+        return result
+
+    @staticmethod
+    def traverse(d, path):
+        if isinstance(path, (str,unicode)):
+            path = path.split(".")
+        elif not isinstance(path, list):
+            raise TypeError("Path must be list or string. Not %s" % type(path))
+        iterator = d
+        for segment in path:
+            iterator = d[segment]
+        return iterator
+
+    @staticmethod
+    def group_by(d, group_by_path):
+        
+        for key, sub_dict in d.iteritems():
+            if isinstance(sub_dict, dict):
+                DictUtils.traverse(sub_dict, group_by_path)
+
+
 
 
 class Rdict(dict):
@@ -106,46 +129,50 @@ class Rdict(dict):
             value = self._dict_type_(value)
         return super(Rdict, self).__setitem__(key, value)
 
-    def _updateSubMap(self, k, v):
+    def _update_sub_map(self, k, v):
         #Make sure internal mappings are also Rdicts
         if not isinstance(self[k], Rdict):
             self[k] = self._dict_type_(self[k])
             #Recurs on internal value
         self[k].update(v)
 
-    def _updateSubList(self, k, v):
+    def _update_sub_list(self, k, v):
         self[k] += v
 
-    def update(self, E=None, **F):
-        if E is None:
-            E = F
-        for k, v in E.iteritems():
+    def update(self, e=None, **f):
+        if e is None:
+            e = f
+        for k, v in e.iteritems():
             is_update_able = False
             if isinstance(v, collections.Mapping):
-                #If we already have a value for the given key
+                # If we already have a value for the given key
                 if k in self:
                     curValue = self[k]
                     if isinstance(curValue, collections.Mapping):
-                        self._updateSubMap(k, v)
+                        self._update_sub_map(k, v)
                         is_update_able = True
                     # Lists automatically extend on updates
                     elif isinstance(curValue, list) and isinstance(v, list):
-                        self._updateSubList(k, v)
+                        self._update_sub_list(k, v)
                         is_update_able = True
             elif k in self and isinstance(self[k], list) and isinstance(v, list):
                 self[k] += v
                 is_update_able = True
-            #If current value isn't a mapping
-            #Just override
+            # If current value isn't a mapping
+            # Just override
             if not is_update_able:
                 self[k] = copy.deepcopy(v)
 
 
-
 class Objdict (AttrObj, Rdict):
+    """
+    All the Dictionary enhancements in one super object-dictionary
+    """
     
     # ignore builtins and IDE frequently used attribute checks
-    __ignored_keys__ = {"_dict_type_", "__class__","__dict__","__members__","__methods__","_oleobj_","_obj_", "_ipython_display_", "_getAttributeNames","trait_names" }
+    __ignored_keys__ = {"_dict_type_", "__class__","__dict__", "__members__", "__methods__",
+                        "_oleobj_", "_obj_", "_ipython_display_",
+                        "_getAttributeNames", "trait_names"}
 
 
     def __setattr__(self, name, value):
@@ -168,14 +195,14 @@ class Objdict (AttrObj, Rdict):
         else:
             return AttrObj.__getattr__(self, name)
 
-
     def split(self, key_groups):
         """
         @param key_groups a list of key groups (e.g. [(1,2,3),  ("a", "b", 6)] to split according to
         @return a list of dictionaries , each dict containing the keys of one given group and the matching values from the original dict;
                 keys that weren't set in a group, will be part of the last 'left-overs' group.
         """
-        return split_dict(self, key_groups, dict_type=self.__class__)
+        return DictUtils.split(self, key_groups, dict_type=self.__class__)
+
 
 
 class OrderedMap(collections.OrderedDict):
@@ -193,11 +220,3 @@ class OrderedMap(collections.OrderedDict):
         self.update(other)
         return self
 
-
-
-def test():
-    o = Objdict()
-    o["Key"]["AnotherKey"]["YetAnotherKey"] = 8
-    return o
-
-test()
