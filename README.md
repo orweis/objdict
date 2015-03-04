@@ -2,9 +2,9 @@
 Objdict - A collection of Dictionary like objects for any task.
 
 * Objdict
- - A all in one dictionary
+ - The ultimate dictionary - all in one
  - recursivly updateable 
- - splitable, 
+ - splitable
  - attribute accessabile
  
 * Rdict
