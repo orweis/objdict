@@ -4,11 +4,15 @@ import copy
 __author__ = 'OW'
 
 
+class NIL(object):
+    pass
+
+
 class AttrObj(object):
 
     __slots__ = []
     __setattr__ = dict.__setitem__
-    __iter__ = dict.iteritems
+    __iter__ = dict.iterkeys
 
     def __delattr__(self, name):
         try:
@@ -23,7 +27,6 @@ class AttrObj(object):
             raise AttributeError(name)
 
 
-
 class AttrDict(AttrObj, dict):
     pass
 
@@ -31,7 +34,7 @@ class AttrDict(AttrObj, dict):
 class JsDict(AttrDict):
     """
     A Dictionary that behaves like a JavaScript Object
-    Access via attribues, and returns None as default for missing items.
+    Access via attributes, and returns None as default for missing items.
     """
 
     def __init__(self, *args, **kwargs):
@@ -44,22 +47,22 @@ class JsDict(AttrDict):
 class DictUtils(object):
 
     @staticmethod
-    def split(d, key_groups, dict_type = dict ):
+    def split(d, key_groups, dict_type=dict):
         """
         @param d a dictionary to split
         @param key_groups a list of key groups (e.g. [(1,2,3),  ("a", "b", 6)] to split according to
-        @return a list of dictionaries , each dict containing the keys of one given group and the matching values from the original dict;
-                keys that weren't set in a group, will be part of the last 'left-overs' group.
+        @return a list of dictionaries , each dict containing the keys of one given group and the matching values
+                from the original dict; keys that weren't set in a group, will be part of the last 'left-overs' group.
         """
         # Final outcome split
         result = []
         # Track which keys got a new group
         handled_keys = set()
-        #For every group
+        # For every group
         for key_group in key_groups:
             # Create a new key
             outcome_dict = dict_type()
-            #Using the given keys
+            # Using the given keys
             for key in key_group:
                 outcome_dict[key] = d[key]
                 handled_keys.add(key)
@@ -74,7 +77,7 @@ class DictUtils(object):
 
     @staticmethod
     def traverse(d, path):
-        if isinstance(path, (str,unicode)):
+        if isinstance(path, (str, unicode)):
             path = path.split(".")
         elif not isinstance(path, list):
             raise TypeError("Path must be list or string. Not %s" % type(path))
@@ -89,8 +92,6 @@ class DictUtils(object):
         for key, sub_dict in d.iteritems():
             if isinstance(sub_dict, dict):
                 DictUtils.traverse(sub_dict, group_by_path)
-
-
 
 
 class Rdict(dict):
@@ -119,9 +120,9 @@ class Rdict(dict):
         self._dict_type_ = self.__class__
 
     def __getitem__(self, item):
-        result = super(Rdict, self).get(item, self._dict_type_())
-        if isinstance(result, Rdict) and len(result) == 0:
-            self[item] = result
+        result = super(Rdict, self).get(item, NIL)
+        if result is NIL:
+            result = self[item] = self._dict_type_()
         return result
 
     def __setitem__(self, key, value):
@@ -130,10 +131,10 @@ class Rdict(dict):
         return super(Rdict, self).__setitem__(key, value)
 
     def _update_sub_map(self, k, v):
-        #Make sure internal mappings are also Rdicts
+        # Make sure internal mappings are also Rdicts
         if not isinstance(self[k], Rdict):
             self[k] = self._dict_type_(self[k])
-            #Recurs on internal value
+            # Recurs on internal value
         self[k].update(v)
 
     def _update_sub_list(self, k, v):
@@ -174,13 +175,11 @@ class Objdict (AttrObj, Rdict):
                         "_oleobj_", "_obj_", "_ipython_display_",
                         "_getAttributeNames", "trait_names"}
 
-
     def __setattr__(self, name, value):
         if name in Objdict.__ignored_keys__:
             return Rdict.__setattr__(self, name, value)
         else:
             return AttrObj.__setattr__(self, name, value)
-
 
     def __delattr__(self, name):
         try:
@@ -198,11 +197,10 @@ class Objdict (AttrObj, Rdict):
     def split(self, key_groups):
         """
         @param key_groups a list of key groups (e.g. [(1,2,3),  ("a", "b", 6)] to split according to
-        @return a list of dictionaries , each dict containing the keys of one given group and the matching values from the original dict;
-                keys that weren't set in a group, will be part of the last 'left-overs' group.
+        @return a list of dictionaries , each dict containing the keys of one given group and the matching values from
+                the original dict; keys that weren't set in a group, will be part of the last 'left-overs' group.
         """
         return DictUtils.split(self, key_groups, dict_type=self.__class__)
-
 
 
 class OrderedMap(collections.OrderedDict):
@@ -216,7 +214,6 @@ class OrderedMap(collections.OrderedDict):
         else:
             return collections.OrderedDict.__getitem__(self, index)
 
-    def __add__(self,other):
+    def __add__(self, other):
         self.update(other)
         return self
-
