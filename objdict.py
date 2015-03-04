@@ -41,7 +41,7 @@ class JsDict(AttrDict):
         super(JsDict, self).__init__(*args, **kwargs)
         
     def __getattr__(self, name):
-        return self.get(name,None)
+        return self.get(name, None)
 
 
 class DictUtils(object):
@@ -171,8 +171,10 @@ class Objdict (AttrObj, Rdict):
     """
     
     # ignore builtins and IDE frequently used attribute checks
-    __ignored_keys__ = {"_dict_type_", "__class__","__dict__", "__members__", "__methods__",
-                        "_oleobj_", "_obj_", "_ipython_display_",
+    __ignored_keys__ = {"_dict_type_", "__class__", "__dict__", "__members__", "__methods__",  # support builtins
+                        "__set__", "__get__",  # support builtins (Descriptors)
+                        "__deepcopy__", "__reduce_ex__", "__reduce__",  # support copy.deepcopy
+                        "_oleobj_", "_obj_", "_ipython_display_",  # support IDEs
                         "_getAttributeNames", "trait_names"}
 
     def __setattr__(self, name, value):
