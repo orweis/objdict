@@ -5,7 +5,7 @@ Objdict - A collection of Dictionary like objects for any task.
  - The ultimate dictionary - all in one
  - recursivly updateable 
  - splitable
- - attribute accessabile
+ - attribute accessible
 
 Usage example:
 ```python
@@ -37,14 +37,14 @@ Usage example:
   - Recursivly updateable dictionary
  
 * AttrDict
- - Access, set, and delete items like attribues
+ - Access, set, and delete items like attributes
 
 * JsDict
  - Acts like a Javascript Object
- - Access, set, and delete items like attribues
+ - Access, set, and delete items like attributes
  - Missing items return as None
  
 * OrderedMap
- - An OrderedDict with an easy udpate chain syntax
+ - An OrderedDict with an easy update chain syntax
 
 
