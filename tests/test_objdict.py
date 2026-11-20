@@ -306,3 +306,33 @@ class TestOrderedMap:
         assert list(c.items()) == [("x", 1), ("y", 2)]
         assert dict(a) == {"x": 1}
         assert b == {"y": 2}
+
+
+def test_pickle_after_setdefault_and_ior():
+    import pickle
+
+    for cls in (Objdict, Rdict):
+        o = cls()
+        o.setdefault("p", {"x": 1})
+        o |= {"q": {"y": 2}}
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            assert pickle.loads(pickle.dumps(o, proto)) == o  # noqa: S301
+
+
+def test_traverse_lists_and_scalars():
+    from objdict import DictUtils
+
+    assert DictUtils.traverse({"a": [10, 20]}, ["a", 0]) == 10
+    assert DictUtils.traverse({"a": [1, 5]}, ["a", 1]) == 5
+    with pytest.raises(KeyError):
+        DictUtils.traverse({"a": [10, 20]}, ["a", 7])
+    with pytest.raises(KeyError):
+        DictUtils.traverse({"a": 1}, "a.b")
+
+
+def test_update_none_is_noop_and_rdict_child_converted():
+    o = Objdict(a=1)
+    o.update(None)
+    assert o == {"a": 1}
+    o.b = Rdict(x=1)
+    assert o.b.x == 1

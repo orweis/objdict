@@ -10,6 +10,9 @@ Requires Python 3.11 or newer (Python 2 is no longer supported; see [CHANGELOG.m
 pip install git+https://github.com/orweis/objdict
 ```
 
+To pin a release or commit, append a ref, e.g. `pip install git+https://github.com/orweis/objdict@<tag-or-commit>`.
+The last Python 2 code is commit `16d94a1`.
+
 (A PyPI package named `objdict` exists but has not been verified to be this project; install from GitHub.)
 
 ## Classes
@@ -59,7 +62,7 @@ OrderedMap({'a': 1, 'b': 2})
 - Names that start and end with `__` are never treated as keys on attribute *read* (they raise
   `AttributeError`), so `copy`, `pickle`, `inspect` and mocks do not create or find keys.
   Use item access for such keys.
-- Nested plain dicts are converted to the container type on construction and assignment.
+- Nested dicts are converted to the container type on construction and assignment.
 - `update()` accepts a mapping or iterable of pairs plus keyword arguments. Merged values are
   deep-copied; lists are concatenated into a new list, so the caller's lists are not modified.
 - `JsDict` returns `None` for missing attributes only; `d["missing"]` still raises `KeyError`.
@@ -71,6 +74,8 @@ OrderedMap({'a': 1, 'b': 2})
 ## Migration from 0.x
 
 See [CHANGELOG.md](CHANGELOG.md) for the full list of breaking changes in 1.0.0.
+Notable: Python >= 3.11 only; `update(e=...)` as a keyword now stores a key `'e'`; dunder attribute reads raise `AttributeError`.
+`OrderedMap` slice steps are ignored, and `Rdict.copy()`, `fromkeys` and `|` may return plain dicts.
 
 ## Development
 

@@ -130,7 +130,8 @@ class DictUtils:
 
         Raises:
             TypeError: If ``path`` is neither a string nor a list/tuple.
-            KeyError: If a segment is missing (the mapping is never modified).
+            KeyError: If a segment is missing or the path runs into a scalar (nothing is modified).
+            List/tuple levels are indexed by integer segments (not by ``"a.0"`` strings).
         """
         if isinstance(path, str):
             segments: Sequence[Any] = path.split(".")
@@ -140,9 +141,21 @@ class DictUtils:
             raise TypeError(f"Path must be list or string. Not {type(path)}")
         current: Any = d
         for segment in segments:
-            if segment not in current:
+            if isinstance(current, Mapping):
+                if segment not in current:
+                    raise KeyError(segment)
+                current = (
+                    dict.__getitem__(current, segment)
+                    if isinstance(current, dict)
+                    else current[segment]
+                )
+            elif isinstance(current, (list, tuple)):
+                try:
+                    current = current[segment]
+                except (IndexError, TypeError):
+                    raise KeyError(segment) from None
+            else:
                 raise KeyError(segment)
-            current = current[segment]
         return current
 
 
@@ -168,7 +181,11 @@ class Rdict(dict):  # type: ignore[type-arg]
         {1: {2: ['a', 'b', 'c', 'd'], '2.1': 'String'}}
     """
 
-    _dict_type_: Callable[..., Any]
+    # Class-level default so unpickling (items are restored before instance state) works.
+    _dict_type_: Callable[..., Any] | None = None
+
+    def _child_type(self) -> Callable[..., Any]:
+        return self._dict_type_ or type(self)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
@@ -180,22 +197,27 @@ class Rdict(dict):  # type: ignore[type-arg]
     def __getitem__(self, item: Any) -> Any:
         result = super().get(item, _MISSING)
         if result is _MISSING:
-            result = self._dict_type_()
+            result = self._child_type()()
             self[item] = result
         return result
 
     def __setitem__(self, key: Any, value: Any) -> None:
-        if isinstance(value, dict) and not isinstance(value, Rdict):
-            value = self._dict_type_(value)
+        child_type = self._child_type()
+        if isinstance(value, dict) and not (
+            isinstance(child_type, type) and isinstance(value, child_type)
+        ):
+            value = child_type(value)
         super().__setitem__(key, value)
 
-    def update(self, e: Any = (), /, **f: Any) -> None:
+    def update(self, e: Any = (), /, **f: Any) -> None:  # noqa: D417
         """Recursively merge ``e`` (mapping or iterable of pairs) and ``f`` into self.
 
         Mappings merge into existing mappings, lists extend existing lists (without
         modifying the original list objects), anything else replaces the current
-        value. Merged-in values are deep-copied.
+        value. Merged-in values are deep-copied. ``update(None)`` is a no-op.
         """
+        if e is None:
+            e = ()
         items = e.items() if isinstance(e, Mapping) else dict(e).items()
         for source in (items, f.items()):
             for k, v in list(source):
@@ -206,7 +228,7 @@ class Rdict(dict):  # type: ignore[type-arg]
             current = super().__getitem__(k)
             if isinstance(v, Mapping) and isinstance(current, Mapping):
                 if not isinstance(current, Rdict):
-                    current = self._dict_type_(current)
+                    current = self._child_type()(current)
                     self[k] = current
                 current.update(v)
                 return

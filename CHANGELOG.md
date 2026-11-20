@@ -17,12 +17,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/); this project us
   into the source); left-overs keep source order.
 - `Rdict.update` merges keyword arguments given alongside a mapping (previously dropped) and
   accepts iterables of pairs; lists are concatenated into a new list rather than mutated in place.
+- `Rdict.update` / `Objdict.update`: `e` is now positional-only, so `update(e={...})` stores a key named
+  `'e'` instead of merging the mapping. `update(None)` remains a no-op.
 - `OrderedMap.__add__` returns a new map instead of mutating the left operand.
 - Removed `DictUtils.group_by` (unfinished; it did nothing) and the `NIL` class.
 
 ### Fixed
 - `DictUtils.traverse` now follows multi-segment paths and no longer creates keys.
 - Nested plain dicts passed to constructors or assigned via attributes are converted.
+
+- Pickling works for Rdict/Objdict holding plain nested dicts added via `setdefault`, `|=` or `dict.update`.
+- Assigning an `Rdict` (or other dict) that is not of the container's type converts it, so attributes work.
 
 ### Added
 - Type hints, `py.typed`, `__all__`, `__version__`, pytest suite, ruff/mypy config, GitHub Actions CI,
