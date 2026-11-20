@@ -49,8 +49,9 @@ The last Python 2 code is commit `16d94a1`.
 >>> a.split([("x",)])
 [{'x': {'y': 1, 'list': [1, 2, 3, 4, 5, '6']}}, {'anotherKey': 'anotherValue', 'yet_another_key': None}]
 >>> from objdict import OrderedMap
->>> OrderedMap()["a":1]["b":2]
-OrderedMap({'a': 1, 'b': 2})
+>>> m = OrderedMap()["a":1]["b":2]
+>>> list(m.items())
+[('a', 1), ('b', 2)]
 
 ```
 
