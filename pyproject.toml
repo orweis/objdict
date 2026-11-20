@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "objdict"
+dynamic = ["version"]
+description = "A collection of dictionary-like objects: recursive, attribute-accessible, splittable."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["dict", "attribute", "recursive", "objdict"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/orweis/objdict"
+Changelog = "https://github.com/orweis/objdict/blob/master/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6,<1", "mypy>=1.10,<2", "build>=1,<2"]
+
+[tool.setuptools.dynamic]
+version = { attr = "objdict.__version__" }
+
+[tool.setuptools.package-data]
+objdict = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "src", "README.md"]
+addopts = "--doctest-modules --doctest-glob=README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
